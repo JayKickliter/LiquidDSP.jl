@@ -82,7 +82,7 @@
 # /*  _fc     : frequency to evaluate                         */  \
 # float FIRFILT(_groupdelay)(FIRFILT() _q,                        \
                            # float     _fc);                      \
-import Base: print, length
+import Base: print, length, push!
 
 export FIRFilter
 
@@ -106,7 +106,7 @@ for (sigstr, Ty, Ti, Tx) in (rrrf, crcf, cccf)
 
     @eval begin
         function FIRFilter(::Type{$Ty}, ::Type{$Tx}, h::Vector{$Ti} )
-            q   = ccall(($liquid_function, libliquid), Ptr{Void}, (Vector{$Ti}, Cint), h, length(h))
+            q   = ccall(($liquid_function, libliquid), Ptr{Void}, (Ptr{$Ti}, Cuint), h, length(h))
             obj = FIRFilter($Ty, $Ti, $Tx, q)
             finalizer(obj, destroy)
             return obj
@@ -122,12 +122,27 @@ for (sigstr, Ty, Ti, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
+
+    for (jfname, lfname, rettype) in [(:execute, :execute_block, Void)]
+        liquid_function = "firfilt_$(sigstr)_$(lfname)"
+        @eval begin
+            function $jfname( obj::FIRFilter{$Ty,$Ti,$Tx}, x::Vector{$Tx} )
+                xLen = length(x)
+                y = Array($Ty, xLen)
+                ccall(($liquid_function, libliquid), $rettype, (Ptr{Void}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
+                return y
+            end
+        end
+    end
 end
 
 #=
+
 reload("/Users/jay/.julia/v0.4/LiquidDSP/src/LiquidDSP.jl")
-myfilt = LiquidDSP.FIRFilter(Float32, Float32, rand(Float32,101))
+h      = sinpi(linspace(Float32(0),Float32(1),11))
+myfilt = LiquidDSP.FIRFilter(Float32, Float32, h)
 LiquidDSP.print(myfilt)
+LiquidDSP.execute(myfilt, ones(Float32, 22))
 LiquidDSP.reset!(myfilt)
 LiquidDSP.destroy(myfilt)
 =#
