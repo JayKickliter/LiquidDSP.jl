@@ -86,11 +86,9 @@ import Base: print, length, push!
 
 export FIRFilter
 
-type FIRFilter{Ty,Ti,Tx}
-    yt::Type{Ty}
-    it::Type{Ti}
-    xt::Type{Tx}
-    q::Ptr{Void}
+type FIRFilter{Th,Tx}
+    q::Ptr{Th}
+    tx::Type{Tx}
 end
 
 Base.show(io::IO, obj::FIRFilter) = print(io::IO, "FIRFilter")
@@ -100,14 +98,14 @@ function Base.showall(io::IO, obj::FIRFilter)
     print(obj)
 end
 
-for (sigstr, Ty, Ti, Tx) in (rrrf, crcf, cccf)
+for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     liquid_function = "firfilt_$(sigstr)_create"
 
     @eval begin
-        function FIRFilter(::Type{$Ty}, ::Type{$Tx}, h::Vector{$Ti} )
-            q   = ccall(($liquid_function, libliquid), Ptr{Void}, (Ptr{$Ti}, Cuint), h, length(h))
-            obj = FIRFilter($Ty, $Ti, $Tx, q)
+        function FIRFilter(::Type{$Tx}, h::Vector{$Th} )
+            q   = ccall(($liquid_function, libliquid), Ptr{$Th}, (Ptr{$Th}, Cuint), h, length(h))
+            obj = FIRFilter(q,$Tx)
             finalizer(obj, destroy)
             return obj
         end
@@ -117,8 +115,10 @@ for (sigstr, Ty, Ti, Tx) in (rrrf, crcf, cccf)
     for (jfname, lfname, rettype) in [(:destroy, :destroy, Void), (:print, :print, Void), (:reset!, :reset, Void), (:length, :length, Cint)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
-            function $jfname( obj::FIRFilter{$Ty,$Ti,$Tx} )
-                ccall(($liquid_function, libliquid), $rettype, (Ptr{Void},), obj.q)
+            function $jfname( obj::FIRFilter{$Th,$Tx} )
+                obj.q == C_NULL && return
+                ccall(($liquid_function, libliquid), $rettype, (Ptr{$Th},), obj.q)
+                obj.q = C_NULL
             end
         end
     end
@@ -126,23 +126,13 @@ for (sigstr, Ty, Ti, Tx) in (rrrf, crcf, cccf)
     for (jfname, lfname, rettype) in [(:execute, :execute_block, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
-            function $jfname( obj::FIRFilter{$Ty,$Ti,$Tx}, x::Vector{$Tx} )
+            function $jfname( obj::FIRFilter{$Th,$Tx}, x::Vector{$Tx} )
+                obj.q == C_NULL && error("`obj` is a NULL pointer")
                 xLen = length(x)
                 y = Array($Ty, xLen)
-                ccall(($liquid_function, libliquid), $rettype, (Ptr{Void}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
+                ccall(($liquid_function, libliquid), $rettype, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
                 return y
             end
         end
     end
 end
-
-#=
-
-reload("/Users/jay/.julia/v0.4/LiquidDSP/src/LiquidDSP.jl")
-h      = sinpi(linspace(Float32(0),Float32(1),11))
-myfilt = LiquidDSP.FIRFilter(Float32, Float32, h)
-LiquidDSP.print(myfilt)
-LiquidDSP.execute(myfilt, ones(Float32, 22))
-LiquidDSP.reset!(myfilt)
-LiquidDSP.destroy(myfilt)
-=#
