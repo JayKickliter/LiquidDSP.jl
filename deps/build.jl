@@ -4,35 +4,31 @@ using BinDeps
 
 liquid = library_dependency("libliquid")
 
-@BinDeps.if_install begin
-
 provides(Sources,
          URI("https://github.com/jgaeddert/liquid-dsp/archive/master.tar.gz"),
          liquid,
-         unpacked_dir = "liquid")
+         unpacked_dir = "liquid-dsp-master")
 
-pngbuilddir = joinpath(BinDeps.depsdir(liquid),"builds","libpng-$png_version")
+liquidsrcdir = joinpath(srcdir(liquid), "liquid-dsp-master")
+prefix       = joinpath(BinDeps.depsdir(liquid),"usr")
 
-provides(BuildProcess,
-	(@build_steps begin
-		GetSources(liquid)
-		CreateDirectory(liquidbuilddir)
-		@build_steps begin
-			ChangeDirectory(liquidbuilddir)
-			FileRule(joinpath(prefix,"lib","libpng15.dll"),@build_steps begin
-				`cmake -DCMAKE_INSTALL_PREFIX="$prefix" -G"MSYS Makefiles" $pngsrcdir`
-				`make`
-				`cp libpng*.dll $prefix/lib`
-				`cp libpng*.a $prefix/lib`
-				`cp libpng*.pc $prefix/lib/pkgconfig`
-				`cp pnglibconf.h $prefix/include`
-				`cp $pngsrcdir/png.h $prefix/include`
-				`cp $pngsrcdir/pngconf.h $prefix/include`
-			end)
-		end
-	end),liquid, os = :Darwin)
 
+provides(SimpleBuild,
+    (@build_steps begin
+        GetSources(liquid)
+        CreateDirectory(prefix)
+        @build_steps begin
+            ChangeDirectory(liquidsrcdir)
+            FileRule(joinpath(prefix,"lib","libliquid.dylib"),@build_steps begin
+                `sh bootstrap.sh`
+                `sh configure`
+                `sed -i.bak s/HAVE_FFTW3_H\ 1/HAVE_FFTW3_H\ 0/g config.h`
+                `make`
+                `mkdir $prefix/lib`
+                `cp libliquid.dylib $prefix/lib`
+                `cp libliquid.a $prefix/lib`
+            end)
+        end
+    end),liquid, os = :Unix)
 
 @BinDeps.install
-
-end
