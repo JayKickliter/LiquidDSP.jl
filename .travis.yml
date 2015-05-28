@@ -7,8 +7,10 @@ julia:
   - nightly
 notifications:
   email: false
+before_install:
+  - julia -e 'Pkg.add("DSP")'
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia --check-bounds=yes -e 'Pkg.add("DSP"); Pkg.clone(pwd()); Pkg.build("LiquidDSP"); Pkg.test("LiquidDSP"; coverage=true)'
+  - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("LiquidDSP"); Pkg.test("LiquidDSP"; coverage=true)'
 after_success:
   - if [ $TRAVIS_JULIA_VERSION = "nightly" ]; then julia -e 'cd(Pkg.dir("LiquidDSP")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'; fi
