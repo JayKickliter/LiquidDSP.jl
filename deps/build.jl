@@ -2,20 +2,20 @@ using BinDeps
 
 @BinDeps.setup
 
-liquid = library_dependency("libliquid")
+libliquid = library_dependency("libliquid")
 
 provides(Sources,
          URI("https://github.com/jgaeddert/liquid-dsp/archive/master.tar.gz"),
-         liquid,
+         libliquid,
          unpacked_dir = "liquid-dsp-master")
 
-liquidsrcdir = joinpath(srcdir(liquid), "liquid-dsp-master")
-prefix       = joinpath(BinDeps.depsdir(liquid),"usr")
+liquidsrcdir = joinpath(srcdir(libliquid), "liquid-dsp-master")
+prefix       = joinpath(BinDeps.depsdir(libliquid),"usr")
 
 
 provides(SimpleBuild,
     (@build_steps begin
-        GetSources(liquid)
+        GetSources(libliquid)
         CreateDirectory(prefix)
         @build_steps begin
             ChangeDirectory(liquidsrcdir)
@@ -29,6 +29,6 @@ provides(SimpleBuild,
                 `cp libliquid.a $prefix/lib`
             end)
         end
-    end),liquid, os = :Unix)
+    end),libliquid, os = :Unix)
 
-@BinDeps.install
+@BinDeps.install Dict(:libliquid => :libliquid)

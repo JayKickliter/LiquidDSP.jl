@@ -1,7 +1,6 @@
 module LiquidDSP
 
-using BinDeps
-@BinDeps.load_dependencies
+include("../deps/deps.jl")
 
 const rrrf = ("rrrf", Float32,Float32,Float32)
 const crcf = ("crcf", Complex64,Float32,Complex64)
