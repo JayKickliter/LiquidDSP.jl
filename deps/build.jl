@@ -31,4 +31,4 @@ provides(SimpleBuild,
         end
     end),libliquid, os = :Unix)
 
-@BinDeps.install Dict(:libliquid => :libliquid)
+@BinDeps.install @compat Dict(:libliquid => :libliquid)
