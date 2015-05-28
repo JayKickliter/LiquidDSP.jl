@@ -2,33 +2,32 @@ using BinDeps
 
 @BinDeps.setup
 
-libliquid = library_dependency("libliquid")
+liquiddsp = library_dependency("liquiddsp", aliases = ["libliquid.dylib", "libliquid.so", "libliquid.dll"])
 
-provides(Sources,
-         URI("https://github.com/jgaeddert/liquid-dsp/archive/master.tar.gz"),
-         libliquid,
-         unpacked_dir = "liquid-dsp-master")
+url     = "https://github.com/jgaeddert/liquid-dsp/archive/master.tar.gz"
+depsdir = BinDeps.depsdir(liquiddsp)
+srcdir  = joinpath(depsdir, "src", "liquid-dsp-master")
+prefix  = joinpath(depsdir, "usr")
 
-liquidsrcdir = joinpath(srcdir(libliquid), "liquid-dsp-master")
-prefix       = joinpath(BinDeps.depsdir(libliquid),"usr")
+@unix_only  libfilename = "libliquid.so"
+@osx_only   libfilename = "libliquid.dylib"
 
+provides(Sources, URI(url), liquiddsp, unpacked_dir="liquid-dsp-master")
 
 provides(SimpleBuild,
     (@build_steps begin
-        GetSources(libliquid)
+        GetSources(liquiddsp)
         CreateDirectory(prefix)
         @build_steps begin
-            ChangeDirectory(liquidsrcdir)
-            FileRule(joinpath(prefix,"lib","libliquid.dylib"),@build_steps begin
+            ChangeDirectory(srcdir)
+            FileRule( joinpath(prefix, "lib", libfilename),
+            @build_steps begin
                 `sh bootstrap.sh`
-                `sh configure`
-                `sed -i.bak s/HAVE_FFTW3_H\ 1/HAVE_FFTW3_H\ 0/g config.h`
+                `sh configure --prefix=$prefix --enable-fftoverride`
                 `make`
-                `mkdir $prefix/lib`
-                `cp libliquid.dylib $prefix/lib`
-                `cp libliquid.a $prefix/lib`
+                `make install`
             end)
         end
-    end),libliquid, os = :Unix)
+    end), liquiddsp, os = :Unix)
 
-@BinDeps.install @compat Dict(:libliquid => :libliquid)
+@BinDeps.install @compat Dict(:liquiddsp => :liquiddsp)

@@ -104,7 +104,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     @eval begin
         function FIRFilter(::Type{$Tx}, h::Vector{$Th} )
-            q   = ccall(($liquid_function, libliquid), Ptr{$Th}, (Ptr{$Th}, Cuint), h, length(h))
+            q   = ccall(($liquid_function, liquiddsp), Ptr{$Th}, (Ptr{$Th}, Cuint), h, length(h))
             obj = FIRFilter(q,$Tx)
             finalizer(obj, destroy)
             return obj
@@ -117,7 +117,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
         @eval begin
             function $jfname( obj::FIRFilter{$Th,$Tx} )
                 obj.q == C_NULL && return
-                ccall(($liquid_function, libliquid), $rettype, (Ptr{$Th},), obj.q)
+                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th},), obj.q)
                 obj.q = C_NULL
             end
         end
@@ -130,7 +130,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
                 obj.q == C_NULL && error("`obj` is a NULL pointer")
                 xLen = length(x)
                 y = Array($Ty, xLen)
-                ccall(($liquid_function, libliquid), $rettype, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
+                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
                 return y
             end
         end
