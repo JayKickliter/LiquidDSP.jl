@@ -7,5 +7,5 @@ julia:
     - nightly
 notifications:
     email: false
-    - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-    - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("LiquidDSP"); Pkg.test("LiquidDSP"; coverage=true)'
+    # - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+    # - julia --check-bounds=yes -e 'Pkg.clone(pwd()); Pkg.build("LiquidDSP"); Pkg.test("LiquidDSP"; coverage=true)'
