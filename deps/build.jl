@@ -17,7 +17,6 @@ provides(Sources, URI(url), liquiddsp, unpacked_dir="liquid-dsp-master")
 provides(SimpleBuild,
     (@build_steps begin
         GetSources(liquiddsp)
-        CreateDirectory(prefix)
         @build_steps begin
             ChangeDirectory(srcdir)
             FileRule( joinpath(prefix, "lib", libfilename),
