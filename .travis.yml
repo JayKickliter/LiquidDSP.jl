@@ -9,7 +9,7 @@ notifications:
   email: false
 script:
   - julia -e 'Pkg.init()'
-  - julia -e 'Pkg.clone("DSP"); Pkg.checkout("DSP", "master")'
+  - julia -e 'Pkg.clone("DSP")'
   - julia -e 'Pkg.clone(pwd())'
   - julia -e 'Pkg.build("LiquidDSP")'
   - julia -e 'Pkg.status()'
