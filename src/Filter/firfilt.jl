@@ -84,7 +84,7 @@
                            # float     _fc);                      \
 import Base: print, length, push!
 
-export FIRFilter
+export FIRFilter, destroy, print, reset!, execute, push!, freqresponse
 
 type FIRFilter{Th,Tx}
     q::Ptr{Th}
@@ -112,7 +112,17 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     end
 
 
-    for (jfname, lfname, rettype) in [(:destroy, :destroy, Void), (:print, :print, Void), (:reset!, :reset, Void), (:length, :length, Cint)]
+    for (jfname, lfname, rettype) in [(:print, :print, Void), (:reset!, :reset, Void), (:length, :length, Cint)]
+        liquid_function = "firfilt_$(sigstr)_$(lfname)"
+        @eval begin
+            function $jfname( obj::FIRFilter{$Th,$Tx} )
+                obj.q == C_NULL && error("`obj` is a NULL pointer")
+                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th},), obj.q)
+            end
+        end
+    end
+    
+    for (jfname, lfname, rettype) in [(:destroy, :destroy, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
             function $jfname( obj::FIRFilter{$Th,$Tx} )
@@ -122,6 +132,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
+    
 
     for (jfname, lfname, rettype) in [(:execute, :execute_block, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
@@ -135,4 +146,54 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
+    
+    for (jfname, lfname, rettype) in [(:execute, :execute, Void)]
+        liquid_function = "firfilt_$(sigstr)_$(lfname)"
+        @eval begin
+            function $jfname( obj::FIRFilter{$Th,$Tx})
+                obj.q == C_NULL && error("`obj` is a NULL pointer")
+                y = Array($Ty ,1)
+                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, Ptr{$Ty}), obj.q, y)
+                return y[1]
+            end
+        end
+    end
+    
+    for (jfname, lfname, rettype) in [(:push!, :push, Void)]
+        liquid_function = "firfilt_$(sigstr)_$(lfname)"
+        @eval begin
+            function $jfname( obj::FIRFilter{$Th,$Tx}, x::$Tx )
+                obj.q == C_NULL && error("`obj` is a NULL pointer")
+                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, $Tx), obj.q, x)
+            end
+        end
+    end
+    
+    for (jfname, lfname, rettype) in [(:freqresponse, :freqresponse, Void)]
+        liquid_function = "firfilt_$(sigstr)_$(lfname)"
+        @eval begin
+            function $jfname( obj::FIRFilter{$Th,$Tx}, f::Real )
+                obj.q == C_NULL && error("`obj` is a NULL pointer")
+                0 <= f <= 0.5 || throw(ArgumentError("f must be normalized 0.5 == nyquist"))
+                z = Array(Complex64, 1)
+                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, Float32, Ptr{Complex64}), obj.q, f, z)
+                return z[1]
+            end
+        end
+    end
+end
+
+limitprecision(x) = x
+limitprecision(x::Float64) = Float32(x)
+limitprecision(x::Complex128) = Complex64(x)
+limitprecision(x::Vector{Float64}) = convert(Vector{Float32}, x)
+limitprecision(x::Vector{Complex128}) = convert(Vector{Complex64}, x)
+
+# Handle conversion of taps tp Float32
+FIRFilter(Tx::Type, h::AbstractVector) = FIRFilter(Tx, limitprecision(h))
+
+# If passed only taps, assume x will be the same type
+function FIRFilter(h::AbstractVector)
+    h = limitprecision(h)
+    FIRFilter(eltype(h), h)
 end
