@@ -8,6 +8,11 @@ julia:
 notifications:
   email: false
 script:
-  - julia --check-bounds=yes -e 'Pkg.init(); Pkg.add("DSP"); Pkg.clone(pwd()); Pkg.build("LiquidDSP"); Pkg.test("LiquidDSP"; coverage=true)'
+  - julia -e 'Pkg.init()'
+  - julia -e 'Pkg.add("DSP")'
+  - julia -e 'Pkg.clone(pwd())'
+  - julia -e 'Pkg.build("LiquidDSP")'
+  - julia -e 'Pkg.status()'
+  - julia --check-bounds=no -e 'Pkg.test("LiquidDSP"; coverage=true)'
 after_success:
   - if [ $TRAVIS_JULIA_VERSION = "nightly" ]; then julia -e 'cd(Pkg.dir("LiquidDSP")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'; fi
