@@ -121,7 +121,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
-    
+
     for (jfname, lfname, rettype) in [(:destroy, :destroy, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
@@ -132,7 +132,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
-    
+
 
     for (jfname, lfname, rettype) in [(:execute, :execute_block, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
@@ -146,7 +146,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
-    
+
     for (jfname, lfname, rettype) in [(:execute, :execute, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
@@ -158,7 +158,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
-    
+
     for (jfname, lfname, rettype) in [(:push!, :push, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
@@ -168,7 +168,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             end
         end
     end
-    
+
     for (jfname, lfname, rettype) in [(:freqresponse, :freqresponse, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
         @eval begin
