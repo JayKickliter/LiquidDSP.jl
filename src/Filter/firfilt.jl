@@ -161,10 +161,19 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     for (jfname, lfname, rettype) in [(:push!, :push, Void)]
         liquid_function = "firfilt_$(sigstr)_$(lfname)"
-        @eval begin
-            function $jfname( obj::FIRFilter{$Th,$Tx}, x::$Tx )
-                obj.q == C_NULL && error("`obj` is a NULL pointer")
-                ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, $Tx), obj.q, x)
+        if Tx<:Real
+            @eval begin
+                function $jfname( obj::FIRFilter{$Th,$Tx}, x::$Tx )
+                    obj.q == C_NULL && error("`obj` is a NULL pointer")
+                    ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, $Tx), obj.q, x)
+                end
+            end
+        else
+            @eval begin
+                function $jfname( obj::FIRFilter{$Th,$Tx}, x::$Tx )
+                    obj.q == C_NULL && error("`obj` is a NULL pointer")
+                    ccall(($liquid_function, liquiddsp), $rettype, (Ptr{$Th}, ($realtype($Tx), $realtype($Tx))), obj.q, (real(x), imag(x)))
+                end
             end
         end
     end

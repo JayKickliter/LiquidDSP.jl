@@ -5,7 +5,6 @@ import DSP
 const dsp = DSP
 
 for (Th, Tx) in [(Float32, Float32), (Float32, Complex64), (Complex64, Complex64)]
-    println((Th, Tx))
     h    = dsp.digitalfilter(dsp.Lowpass(0.5), dsp.FIRWindow(dsp.hamming(21)))
     h    = convert(Vector{Th}, h)
     x    = rand(Tx, 101)
