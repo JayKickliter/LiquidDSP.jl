@@ -28,7 +28,6 @@ for (Th, Tx) in [(Float32, Float32), (Float32, Complex64), (Complex64, Complex64
 
     z_d = dsp.freqz(dsp.PolynomialRatio(h,[1]), linspace(0,pi,100))
     z_l = [freqresponse(ff_l, f) for f in linspace(0,0.5,100)]
-    display(z_l)
     @test_approx_eq abs(z_d) abs(z_l)
 
     @test_throws ArgumentError  freqresponse(ff_l, 0.0-eps(0.0))
