@@ -10,3 +10,6 @@ export  FIRFilter,
 
 include("firinterp.jl")
 export FIRInterp
+
+include("firdecim.jl")
+export FIRDecim

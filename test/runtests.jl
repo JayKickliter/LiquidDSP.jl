@@ -1,2 +1,2 @@
-include("test_FIRInterp.jl")
-include("test_FIRFilter.jl")
+include("test_firinterp.jl")
+include("test_firfilter.jl")
