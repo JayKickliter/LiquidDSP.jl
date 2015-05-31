@@ -8,5 +8,5 @@ export  FIRFilter,
         freqresponse,
         groupdelay
 
-include("firinterp.jl")Y
+include("firinterp.jl")
 export FIRInterp
