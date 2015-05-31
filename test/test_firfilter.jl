@@ -11,6 +11,10 @@ for (Th, Tx) in [(Float32, Float32), (Float32, Complex64), (Complex64, Complex64
     ff_d = dsp.FIRFilter(h)
     ff_l = FIRFilter(Tx, h)
 
+    # Test gettaps 
+    h_l = gettaps(ff_l)
+    @test_approx_eq h_l h
+
     y_d  = dsp.filt(ff_d, x)
     y_l  = execute(ff_l, x)
     @test_approx_eq y_l y_d

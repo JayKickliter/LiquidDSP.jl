@@ -13,6 +13,10 @@ for (Th, Tx) in [(Float32, Float32), (Float32, Complex64), (Complex64, Complex64
     # Create filter objects
     ff_d = DSP.FIRFilter(h, 1//2)
     ff_l = FIRDecim(Tx, 2, h)
+    
+    # Test gettaps 
+    h_l = gettaps(ff_l)
+    @test_approx_eq h_l h
 
     # Test case where Tx assumed to be the same as Th
     if Tx == Th

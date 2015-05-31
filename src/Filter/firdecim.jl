@@ -42,7 +42,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     #                                        unsigned int _m,
     #                                        float        _As);
 
-    # TODO: this function doesn't appear to be working on the liquid-dsp side of th house
+    # # TODO: this function doesn't appear to be working on the liquid-dsp side of th house
     # @eval begin
     #     function FIRDecim(::Type{$Tx}, decimation::Integer, attenuation::Real, delay::Integer = 11)
     #         delay > 0 || throw(ArgumentError("Delay, (hLen-1)/(2*decimation), must be greater than 0"))
@@ -120,6 +120,13 @@ function FIRDecim(decimation::Integer, h::AbstractVector)
     FIRDecim(eltype(h), decimation, h)
 end
 
+function gettaps{Th,Tx}(obj::FIRDecim{Th,Tx})
+    hLenPtr = convert(Ptr{Cuint}, obj.q+sizeof(obj.q))
+    hLen    = unsafe_load(hLenPtr)
+    hPtr    = convert(Ptr{Ptr{Th}}, obj.q)
+    h       = pointer_to_array(unsafe_load(hPtr), hLen)
+end
+
 
 #################################################################
 # _ _  _ ___  _    ____ _  _ ____ _  _ ___ ____ ___ _ ____ _  _ #
@@ -131,15 +138,7 @@ end
 #             |    |___ | \| |__/ | | \| |__]                   #
 #################################################################
 
-#
-# /* create decimator from prototype
-# /*  _M      : decimation factor
-# /*  _m      : filter delay (symbols)
-# /*  _As     : stop-band attenuation [dB]
-# FIRDECIM() FIRDECIM(_create_prototype)(unsigned int _M,
-#                                        unsigned int _m,
-#                                        float        _As);
-#
+
 # /* create square-root Nyquist decimator
 # /*  _type   : filter type (e.g. LIQUID_FIRFILT_RRC)
 # /*  _M      : samples/symbol (decimation factor)

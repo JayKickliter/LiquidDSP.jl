@@ -175,6 +175,14 @@ function FIRFilter(h::AbstractVector)
     FIRFilter(eltype(h), h)
 end
 
+function gettaps{Th,Tx}(obj::FIRFilter{Th,Tx})
+    hLenPtr = convert(Ptr{Cuint}, obj.q+sizeof(obj.q))
+    hLen    = unsafe_load(hLenPtr)
+    hPtr    = convert(Ptr{Ptr{Th}}, obj.q)
+    h       = pointer_to_array(unsafe_load(hPtr), hLen)
+end
+
+
 # /* create using Kaiser-Bessel windowed sinc method
 # /*  _n      : filter length, _n > 0
 # /*  _fc     : filter cut-off frequency 0 < _fc < 0.5
