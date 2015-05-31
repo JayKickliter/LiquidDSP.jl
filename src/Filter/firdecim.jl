@@ -28,15 +28,35 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
         function FIRDecim(::Type{$Tx}, decimation::Integer, h::Vector{$Th})
             q   = ccall(($"firdecim_$(sigstr)_create", liquiddsp), Ptr{$Th}, (Cuint, Ptr{$Th}, Cuint), decimation, h, length(h))
             obj = FIRDecim(q, $Tx, decimation)
-            # finalizer(obj, destroy)
+            finalizer(obj, destroy)
             return obj
         end
     end
 
 
+    # /* create decimator from prototype
+    # /*  _M      : decimation factor
+    # /*  _m      : filter delay (symbols)
+    # /*  _As     : stop-band attenuation [dB]
+    # FIRDECIM() FIRDECIM(_create_prototype)(unsigned int _M,
+    #                                        unsigned int _m,
+    #                                        float        _As);
+
+    # TODO: this function doesn't appear to be working on the liquid-dsp side of th house
+    # @eval begin
+    #     function FIRDecim(::Type{$Tx}, decimation::Integer, attenuation::Real, delay::Integer = 11)
+    #         delay > 0 || throw(ArgumentError("Delay, (hLen-1)/(2*decimation), must be greater than 0"))
+    #         q   = ccall(($"firdecim_$(sigstr)_create_prototype", liquiddsp), Ptr{$Th}, (Cuint, Cuint, Float32), decimation, delay, attenuation)
+    #         obj = FIRDecim(q, $Tx, decimation)
+    #         finalizer(obj, destroy)
+    #         return obj
+    #     end
+    # end
+
+
     # /* print decimator object propreties to stdout              */  \
     # void FIRDECIM(_print)(FIRDECIM() _q);                           \
-    
+
     @eval begin
         function print( obj::FIRDecim{$Th,$Tx} )
             obj.q == C_NULL && error("`obj` is a NULL pointer")
@@ -47,7 +67,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     # /* reset decimator object internal state                    */  \
     # void FIRDECIM(_clear)(FIRDECIM() _q);                           \
-    
+
     @eval begin
         function reset!( obj::FIRDecim{$Th,$Tx} )
             obj.q == C_NULL && error("`obj` is a NULL pointer")
@@ -58,7 +78,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     # /* destroy decimator object                                 */  \
     # void FIRDECIM(_destroy)(FIRDECIM() _q);                         \
-    
+
     @eval begin
         function destroy( obj::FIRDecim{$Th,$Tx} )
             obj.q == C_NULL && return
@@ -77,14 +97,15 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     #                               TI *         _x,                  \
     #                               unsigned int _n,                  \
     #                               TO *         _y);                 \
-    
+
     @eval begin
         function execute( obj::FIRDecim{$Th,$Tx}, x::Vector{$Tx} )
             obj.q == C_NULL && error("`obj` is a NULL pointer")
             xLen = length(x)
             xLen % obj.decimation == 0 || error("input must be an integer multiple of the decimation factor")
-            y = Array($Ty, Int(xLen/obj.decimation))
-            ccall(($"firdecim_$(sigstr)_execute_block", liquiddsp), Void, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
+            yLen = div(xLen, obj.decimation)
+            y = Array($Ty, yLen)
+            ccall(($"firdecim_$(sigstr)_execute_block", liquiddsp), Void, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, yLen, y)
             return y
         end
     end
@@ -109,35 +130,35 @@ end
 #             |__] |___ |\ | |  \ | |\ | | __                   #
 #             |    |___ | \| |__/ | | \| |__]                   #
 #################################################################
-                                                                                                                                                                                         
-#                                                                 \
-# /* create decimator from prototype                          */  \
-# /*  _M      : decimation factor                             */  \
-# /*  _m      : filter delay (symbols)                        */  \
-# /*  _As     : stop-band attenuation [dB]                    */  \
-# FIRDECIM() FIRDECIM(_create_prototype)(unsigned int _M,         \
-#                                        unsigned int _m,         \
-#                                        float        _As);       \
-#                                                                 \
-# /* create square-root Nyquist decimator                     */  \
-# /*  _type   : filter type (e.g. LIQUID_FIRFILT_RRC)         */  \
-# /*  _M      : samples/symbol (decimation factor)            */  \
-# /*  _m      : filter delay (symbols)                        */  \
-# /*  _beta   : rolloff factor (0 < beta <= 1)                */  \
-# /*  _dt     : fractional sample delay                       */  \
-# FIRDECIM() FIRDECIM(_create_rnyquist)(int          _type,       \
-#                                       unsigned int _M,          \
-#                                       unsigned int _m,          \
-#                                       float        _beta,       \
-#                                       float        _dt);        \
-#                                                                 \
-#                                                                 \
-#                                                                 \
-# /* execute decimator on _M input samples                    */  \
-# /*  _q      : decimator object                              */  \
-# /*  _x      : input samples [size: _M x 1]                  */  \
-# /*  _y      : output sample pointer                         */  \
-# void FIRDECIM(_execute)(FIRDECIM() _q,                          \
-#                         TI *       _x,                          \
-#                         TO *       _y);                         \
-#                                                                 \
+
+#
+# /* create decimator from prototype
+# /*  _M      : decimation factor
+# /*  _m      : filter delay (symbols)
+# /*  _As     : stop-band attenuation [dB]
+# FIRDECIM() FIRDECIM(_create_prototype)(unsigned int _M,
+#                                        unsigned int _m,
+#                                        float        _As);
+#
+# /* create square-root Nyquist decimator
+# /*  _type   : filter type (e.g. LIQUID_FIRFILT_RRC)
+# /*  _M      : samples/symbol (decimation factor)
+# /*  _m      : filter delay (symbols)
+# /*  _beta   : rolloff factor (0 < beta <= 1)
+# /*  _dt     : fractional sample delay
+# FIRDECIM() FIRDECIM(_create_rnyquist)(int          _type,
+#                                       unsigned int _M,
+#                                       unsigned int _m,
+#                                       float        _beta,
+#                                       float        _dt);
+#
+#
+#
+# /* execute decimator on _M input samples
+# /*  _q      : decimator object
+# /*  _x      : input samples [size: _M x 1]
+# /*  _y      : output sample pointer
+# void FIRDECIM(_execute)(FIRDECIM() _q,
+#                         TI *       _x,
+#                         TO *       _y);
+#
