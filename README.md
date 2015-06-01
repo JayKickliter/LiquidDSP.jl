@@ -33,7 +33,7 @@ firdecim_rrrf_execute_block(myfilt, x, n_out, y);
 # Create firdecim object with:
 #      a decimation factor of 2
 #      an already defined vector of taps named h
-#      an output type of Float32
+#      an input type of Float32
 
 myfilt = LiquidDSP.FIRDecim(Float32, 2, h)
 
