@@ -1,12 +1,22 @@
 [![Build Status](https://travis-ci.org/JayKickliter/LiquidDSP.jl.svg?branch=master)](https://travis-ci.org/JayKickliter/LiquidDSP.jl)
 
+
 # LiquidDSP
 
 This Julia package is a wrapper for Joseph Gaeddert's excellent digital communications library, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp).
 
+
+## Installation
+
+```julia
+julia> Pkg.clone("https://github.com/JayKickliter/LiquidDSP.jl.git")
+```
+
+
 ## Usage
 
 This package follows **liquid-dsp**'s calling conventions fairly closely, with a few exceptions. The biggest difference is the use of [CamelCase](http://en.wikipedia.org/wiki/CamelCase) for object names, and the lack of type signatures in function names.
+
 
 ### `liquid-dsp` c code
 
@@ -42,7 +52,8 @@ myfilt = LiquidDSP.FIRDecim(Float32, 2, h)
 y = execute(myfilt, x)
 ```
 
-## Objects and methods implemented
+
+## Objects and methods (implemented so far)
 
 ### Filter object constructors
 
