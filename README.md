@@ -2,7 +2,7 @@
 
 # LiquidDSP
 
-This Julia package is a wrapper for Joseph Gaeddert's excellent digital communications library, [liquid-dsp](http://liquidsdr.org).
+This Julia package is a wrapper for Joseph Gaeddert's excellent digital communications library, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp).
 
 ## Usage
 
