@@ -46,18 +46,18 @@ y = execute(myfilt, x)
 
 ### Filter object constructors
 
-| Constructor | Description |
-|--------|-------------|
-| `obj = FIRFilt([eltype(x),] h)` | Creates a `FIRFilt` |
-| `obj = FIRDecim([eltype(x),], M, h)` | Create a `FIRDecim` object with integer decimation factor `M`  |
+| Constructor                           | Description                                                       |
+|:--------------------------------------|:------------------------------------------------------------------|
+| `obj = FIRFilt([eltype(x),] h)`       | Creates a `FIRFilt`                                               |
+| `obj = FIRDecim([eltype(x),], M, h)`  | Create a `FIRDecim` object with integer decimation factor `M`     |
 | `obj = FIRInterp([eltype(x),], L, h)` | Create a `FIRInterp` object with integer interpolation factor `L` |
 
 ### Filter object methods
 
-| Constructor | Description | Valid `obj` types |
-|--------|-------------|-------------|
-| `y = execute(obj, x)` | Filter vector `x` | `FIRFilt`, `FIRDecim`, `FIRInterp` |
-| `reset!(obj)` | Reset `obj` to its initial state | `FIRFilt`, `FIRDecim`, `FIRInterp` |
-| `h = gettaps(obj)` | Returns `obj`'s internal coefficients | `FIRFilt`, `FIRDecim` |
-| `r = freqresponse(obj, ƒ)` | Get the frequency response of `obj` at `ƒ` in [0,0.5] | `FIRFilt` |
-| `d = groupdelay(obj, ƒ)` | Get the group delay of `obj` at `ƒ` in [0,0.5] | `FIRFilt` |
+| Constructor                   | Description                                           | Valid `obj` types                     |
+|:------------------------------|:------------------------------------------------------|:--------------------------------------|
+| `y = execute(obj, x)`         | Filter vector `x`                                     | `FIRFilt`, `FIRDecim`, `FIRInterp`    |
+| `reset!(obj)`                 | Reset `obj` to its initial state                      | `FIRFilt`, `FIRDecim`, `FIRInterp`    |
+| `h = gettaps(obj)`            | Returns `obj`'s internal coefficients                 | `FIRFilt`, `FIRDecim`                 |
+| `r = freqresponse(obj, ƒ)`    | Get the frequency response of `obj` where 0≤ƒ≤0.5     | `FIRFilt`                             |
+| `d = groupdelay(obj, ƒ)`      | Get the group delay of `obj` where 0≤ƒ≤0.5            | `FIRFilt`                             |
