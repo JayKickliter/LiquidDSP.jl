@@ -82,7 +82,8 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
         function execute( obj::FIRInterp{$Th,$Tx}, x::Vector{$Tx} )
             obj.q == C_NULL && error("`obj` is a NULL pointer")
             xLen = length(x)
-            y = Array($Ty, xLen*2)
+            yLen = xLen*obj.interpolation
+            y = Array($Ty, yLen)
             ccall(($"firinterp_$(sigstr)_execute_block", liquiddsp), Void, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}), obj.q, x, xLen, y)
             return y
         end
