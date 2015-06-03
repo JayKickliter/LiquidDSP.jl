@@ -49,8 +49,9 @@ y = execute(myfilt, x)
 | Constructor                           | Description                                                       |
 |:--------------------------------------|:------------------------------------------------------------------|
 | `obj = FIRFilt([eltype(x),] h)`       | Creates a `FIRFilt`                                               |
-| `obj = FIRDecim([eltype(x),], M, h)`  | Create a `FIRDecim` object with integer decimation factor `M`     |
-| `obj = FIRInterp([eltype(x),], L, h)` | Create a `FIRInterp` object with integer interpolation factor `L` |
+| `obj = FIRDecim([eltype(x),] M, h)`   | Create a `FIRDecim` object with integer decimation factor `M`     |
+| `obj = FIRInterp([eltype(x),] L, h)`  | Create a `FIRInterp` object with integer interpolation factor `L` |
+
 
 ### Filter object methods
 

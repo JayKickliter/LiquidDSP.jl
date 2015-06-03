@@ -8,6 +8,9 @@ export  FIRInterp
 include("firdecim.jl")
 export  FIRDecim,
         gettaps
+        
+include("resamp.jl")
+export  Resamp
 
 # Export common methods
 export  destroy,
