@@ -1,32 +1,33 @@
-# /* create arbitrary resampler object with a specified input */  \
-# /* resampling rate and default parameters                   */  \
-# /*  m (filter semi-length) = 7                              */  \
-# /*  fc (filter cutoff frequency) = 0.25                     */  \
-# /*  As (filter stop-band attenuation) = 60 dB               */  \
-# /*  npfb (number of filters in the bank) = 64               */  \
-# RESAMP() RESAMP(_create_default)(float _rate);                  \
-#                                                                 \
-#                                                                 \
-#                                                                 \
-#                                                                 \
-# /* get resampler delay (output samples)                     */  \
-# unsigned int RESAMP(_get_delay)(RESAMP() _q);                   \
-#                                                                 \
-# /* set rate of arbitrary resampler                          */  \
-# void RESAMP(_setrate)(RESAMP() _q, float _rate);                \
-#                                                                 \
-# /* execute arbitrary resampler                              */  \
-# /*  _q              :   resamp object                       */  \
-# /*  _x              :   single input sample                 */  \
-# /*  _y              :   output sample array (pointer)       */  \
-# /*  _num_written    :   number of samples written to _y     */  \
-# void RESAMP(_execute)(RESAMP()       _q,                        \
-#                       TI             _x,                        \
-#                       TO *           _y,                        \
-#                       unsigned int * _num_written);             \
-#                                                                 \
-
 import Base: print, length, push!
+
+type Resamp_liq{Th,Tx}
+    # filter design parameters
+    m::Cuint   # filter semi-length, h_len = 2*m + 1
+    As::Cfloat # filter stop-band attenuation
+    fc::Cfloat # filter cutoff frequency
+
+    # resampling properties/states
+    rate::Cfloat # resampling rate (ouput/input)
+    del::Cfloat  # fractional delay step
+
+    # floating-point phase
+    tau::Cfloat # accumulated timing phase, 0 <= tau < 1
+    bf::Cfloat  # soft filterbank index, bf = tau*npfb = b + mu
+    b::Cint     # base filterbank index, 0 <= b < npfb
+    mu::Cfloat  # fractional filterbank interpolation value, 0 <= mu < 1
+    y0::Tx      # filterbank output at index b
+    y1::Tx      # filterbank output at index b+1
+
+    # polyphase filterbank properties/object
+    npfb::Cuint      # number of filters in the bank
+    f::FIRPFB{Th,Tx} # filterbank object (interpolator)
+
+    # enum {
+    #     RESAMP_STATE_BOUNDARY, # boundary between input samples
+    #     RESAMP_STATE_INTERP,   # regular interpolation
+    # } state
+    state::Cint
+end
 
 type Resamp{Th,Tx}
     q::Ptr{Th}
@@ -61,6 +62,33 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
             obj = Resamp(q, $Tx, rate)
             finalizer(obj, destroy)
             return obj
+        end
+    end
+    
+    # /* create arbitrary resampler object with a specified input */  \
+    # /* resampling rate and default parameters                   */  \
+    # /*  m (filter semi-length) = 7                              */  \
+    # /*  fc (filter cutoff frequency) = 0.25                     */  \
+    # /*  As (filter stop-band attenuation) = 60 dB               */  \
+    # /*  npfb (number of filters in the bank) = 64               */  \
+    # RESAMP() RESAMP(_create_default)(float _rate);                  \
+
+    @eval begin
+        function Resamp(::Type{$Tx}, ::Type{$Th}, rate::Real)
+            q   = ccall(($"resamp_$(sigstr)_create_default", liquiddsp), Ptr{$Th}, (Float32,), rate)
+            obj = Resamp(q, $Tx, rate)
+            finalizer(obj, destroy)
+            return obj
+        end
+    end
+
+    # /* get resampler delay (output samples)                     */  \
+    # unsigned int RESAMP(_get_delay)(RESAMP() _q);                   \
+
+    @eval begin
+        function getdelay(obj::Resamp{$Th,$Tx})
+            obj.q == C_NULL && error("`obj` is a NULL pointer")
+            ccall(($"resamp_$(sigstr)_get_delay", liquiddsp), Cint, (Ptr{$Th},), obj.q)
         end
     end
 
@@ -130,48 +158,17 @@ function Resamp(interpolation::Integer, h::AbstractVector)
     Resamp(eltype(h), interpolation, h)
 end
 
-
-
-
-# /* create interpolator from prototype
-# /*  _M      : interpolation factor
-# /*  _m      : filter delay (symbols)
-# /*  _As     : stop-band attenuation [dB]
-# FIRINTERP() FIRINTERP(_create_prototype)(unsigned int _M,
-#                                          unsigned int _m,
-#                                          float        _As);
-#
-# /* create Nyquist interpolator
-# /*  _type   : filter type (e.g. LIQUID_FIRFILT_RCOS)
-# /*  _k      :   samples/symbol,          _k > 1
-# /*  _m      :   filter delay (symbols),  _m > 0
-# /*  _beta   :   excess bandwidth factor, _beta < 1
-# /*  _dt     :   fractional sample delay, _dt in (-1, 1)
-# FIRINTERP() FIRINTERP(_create_nyquist)(int          _type,
-#                                        unsigned int _k,
-#                                        unsigned int _m,
-#                                        float        _beta,
-#                                        float        _dt);
-#
-# /* create square-root Nyquist interpolator
-# /*  _type   : filter type (e.g. LIQUID_FIRFILT_RRC)
-# /*  _k      :   samples/symbol,          _k > 1
-# /*  _m      :   filter delay (symbols),  _m > 0
-# /*  _beta   :   excess bandwidth factor, _beta < 1
-# /*  _dt     :   fractional sample delay, _dt in (-1, 1)
-# FIRINTERP() FIRINTERP(_create_rnyquist)(int          _type,
-#                                         unsigned int _k,
-#                                         unsigned int _m,
-#                                         float        _beta,
-#                                         float        _dt);
-#
-#
-#
-#
-# /* execute interpolation on single input sample
-# /*  _q      : resamp object
-# /*  _x      : input sample
-# /*  _y      : output sample array [size: _M x 1]
-# void FIRINTERP(_execute)(FIRINTERP() _q,
-#                          TI          _x,
-#                          TO *        _y);
+#                                                                 \
+# /* set rate of arbitrary resampler                          */  \
+# void RESAMP(_setrate)(RESAMP() _q, float _rate);                \
+#                                                                 \
+# /* execute arbitrary resampler                              */  \
+# /*  _q              :   resamp object                       */  \
+# /*  _x              :   single input sample                 */  \
+# /*  _y              :   output sample array (pointer)       */  \
+# /*  _num_written    :   number of samples written to _y     */  \
+# void RESAMP(_execute)(RESAMP()       _q,                        \
+#                       TI             _x,                        \
+#                       TO *           _y,                        \
+#                       unsigned int * _num_written);             \
+#                                                                 \
