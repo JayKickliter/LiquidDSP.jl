@@ -1,0 +1,9 @@
+86,93d85
+<     // Store original taps in h
+<     q->h = malloc(sizeof(TC)*_h_len);
+<     
+<     for(i = 0; i < _h_len; i++)
+<     {
+<         q->h[i] = _h[i];
+<     }
+< 
