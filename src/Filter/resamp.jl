@@ -1,8 +1,8 @@
 import Base: print, length, push!
 
-type Resamp_liq{Th,Tx}
+immutable Resamp{Th,Tx}
     # filter design parameters
-    m::Cuint   # filter semi-length, h_len = 2*m + 1
+    m::Cint   # filter semi-length, h_len = 2*m + 1
     As::Cfloat # filter stop-band attenuation
     fc::Cfloat # filter cutoff frequency
 
@@ -19,8 +19,8 @@ type Resamp_liq{Th,Tx}
     y1::Tx      # filterbank output at index b+1
 
     # polyphase filterbank properties/object
-    npfb::Cuint      # number of filters in the bank
-    f::FIRPFB{Th,Tx} # filterbank object (interpolator)
+    npfb::Cint           # number of filters in the bank
+    f::Ptr{FIRPFB{Th,Tx}} # filterbank object (interpolator)
 
     # enum {
     #     RESAMP_STATE_BOUNDARY, # boundary between input samples
@@ -29,18 +29,12 @@ type Resamp_liq{Th,Tx}
     state::Cint
 end
 
-type Resamp{Th,Tx}
-    q::Ptr{Th}
-    tx::Type{Tx}
-    rate::Float64
-end
-
-Base.show{Th,Tx}(io::IO, obj::Resamp{Th,Tx}) = print(io::IO, "Resamp{$Th,$Tx}")
-
-function Base.showall(io::IO, obj::Resamp)
-    println(io::IO)
-    print(obj)
-end
+# Base.show{Th,Tx}(io::IO, obj::Resamp{Th,Tx}) = print(io::IO, "Resamp{$Th,$Tx}")
+#
+# function Base.showall(io::IO, obj::Resamp)
+#     println(io::IO)
+#     print(obj)
+# end
 
 for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
@@ -58,10 +52,8 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     @eval begin
         function Resamp(::Type{$Tx}, ::Type{$Th}, rate::Real, tapsPerϕ::Integer, Nϕ::Integer=32; As::Real = 60.0, fc::FloatingPoint=0.5/32)
-            q   = ccall(($"resamp_$(sigstr)_create", liquiddsp), Ptr{$Th}, (Float32, Cuint, Float32, Float32, Cuint), rate, tapsPerϕ, fc, As, Nϕ)
-            obj = Resamp(q, $Tx, rate)
-            finalizer(obj, destroy)
-            return obj
+            q = ccall(($"resamp_$(sigstr)_create", liquiddsp), Ptr{Resamp{$Th,$Tx}}, (Float32, Cuint, Float32, Float32, Cuint), rate, tapsPerϕ, fc, As, Nϕ)
+            obj = unsafe_load(q)
         end
     end
     
@@ -72,13 +64,11 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     # /*  As (filter stop-band attenuation) = 60 dB               */  \
     # /*  npfb (number of filters in the bank) = 64               */  \
     # RESAMP() RESAMP(_create_default)(float _rate);                  \
-
+    
     @eval begin
         function Resamp(::Type{$Tx}, ::Type{$Th}, rate::Real)
-            q   = ccall(($"resamp_$(sigstr)_create_default", liquiddsp), Ptr{$Th}, (Float32,), rate)
-            obj = Resamp(q, $Tx, rate)
-            finalizer(obj, destroy)
-            return obj
+            q = ccall(($"resamp_$(sigstr)_create_default", liquiddsp), Ptr{Resamp{$Th,$Tx}}, (Float32,), rate)
+            obj = unsafe_load(q)
         end
     end
 
@@ -87,8 +77,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     @eval begin
         function getdelay(obj::Resamp{$Th,$Tx})
-            obj.q == C_NULL && error("`obj` is a NULL pointer")
-            ccall(($"resamp_$(sigstr)_get_delay", liquiddsp), Cint, (Ptr{$Th},), obj.q)
+            ccall(($"resamp_$(sigstr)_get_delay", liquiddsp), Cint, (Ptr{Resamp{$Th,$Tx}},), [obj])
         end
     end
 
@@ -98,8 +87,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     
     @eval begin
         function print( obj::Resamp{$Th,$Tx} )
-            obj.q == C_NULL && error("`obj` is a NULL pointer")
-            ccall(($"resamp_$(sigstr)_print", liquiddsp), Void, (Ptr{$Th},), obj.q)
+            ccall(($"resamp_$(sigstr)_print", liquiddsp), Void, (Ptr{Resamp{$Th,$Tx}},), [obj])
         end
     end
 
@@ -109,8 +97,7 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
 
     @eval begin
         function reset!( obj::Resamp{$Th,$Tx} )
-            obj.q == C_NULL && error("`obj` is a NULL pointer")
-            ccall(($"resamp_$(sigstr)_reset", liquiddsp), Void, (Ptr{$Th},), obj.q)
+            ccall(($"resamp_$(sigstr)_reset", liquiddsp), Void, (Ptr{Resamp{$Th,$Tx}},), [obj])
         end
     end
 
@@ -120,8 +107,8 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     
     @eval begin
         function destroy( obj::Resamp{$Th,$Tx} )
-            obj.q == C_NULL && return
-            ccall(($"resamp_$(sigstr)_destroy", liquiddsp), Void, (Ptr{$Th},), obj.q)
+            println("Destroying ", obj)
+            ccall(($"resamp_$(sigstr)_destroy", liquiddsp), Void, (Ptr{Resamp{$Th,$Tx}},), [obj])
             obj.q = C_NULL
         end
     end
@@ -141,21 +128,20 @@ for (sigstr, Ty, Th, Tx) in (rrrf, crcf, cccf)
     
     @eval begin
         function execute( obj::Resamp{$Th,$Tx}, x::Vector{$Tx} )
-            obj.q == C_NULL && error("`obj` is a NULL pointer")
             xLen = length(x)
             yLen = ceil(Int, 1.1 * xLen * obj.rate) + 4
             y = Array($Ty, yLen)
             samplesWritten = [zero(Cuint)]
-            ccall(($"resamp_$(sigstr)_execute_block", liquiddsp), Void, (Ptr{$Th}, Ptr{$Tx}, Cuint, Ptr{$Ty}, Ptr{Cuint}), obj.q, x, xLen, y, samplesWritten)
+            ccall(($"resamp_$(sigstr)_execute_block", liquiddsp), Void, (Ptr{Resamp{$Th,$Tx}}, Ptr{$Tx}, Cuint, Ptr{$Ty}, Ptr{Cuint}), [obj], x, xLen, y, samplesWritten)
             resize!(y, samplesWritten[1])
         end
     end
+
 end
 
-# If passed only taps, assume x will be the same type
-function Resamp(interpolation::Integer, h::AbstractVector)
-    h = limitprecision(h)
-    Resamp(eltype(h), interpolation, h)
+
+function gettaps(obj::Resamp)
+    gettaps(obj.f)
 end
 
 #                                                                 \

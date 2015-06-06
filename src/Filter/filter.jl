@@ -1,3 +1,4 @@
+include("FIRPFB.jl")
 
 include("firfilt.jl")
 export  FIRFilter
@@ -10,7 +11,8 @@ export  FIRDecim,
         gettaps
         
 include("resamp.jl")
-export  Resamp
+export  Resamp,
+        getdelay
 
 # Export common methods
 export  destroy,

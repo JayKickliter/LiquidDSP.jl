@@ -5,6 +5,8 @@ const crcf = ("crcf", Complex64,Float32,Complex64)
 const cccf = ("cccf", Complex64,Complex64,Complex64)
 
 include("../deps/deps.jl")
+include("Math/Dotprod.jl")
+include("Math/Window.jl")
 include("util.jl")
 include("liquid_types.jl")
 
