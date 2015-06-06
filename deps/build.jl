@@ -4,7 +4,7 @@ using BinDeps
 
 liquiddsp = library_dependency("liquiddsp", aliases = ["libliquid.dylib", "libliquid.so", "libliquid.dll"])
 
-url     = "https://github.com/jgaeddert/liquid-dsp/archive/master.tar.gz"
+url     = "https://github.com/jaykickliter/liquid-dsp/archive/master.tar.gz"
 depsdir = BinDeps.depsdir(liquiddsp)
 srcdir  = joinpath(depsdir, "src", "liquid-dsp-master")
 prefix  = joinpath(depsdir, "usr")
